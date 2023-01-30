@@ -5,16 +5,13 @@ import (
 	"ApiCRUD/models"
 	"encoding/json"
 	"github.com/gin-gonic/gin"
+	"log"
 	"net/http"
 )
 
 func GetHeroesHandler(c *gin.Context) {
 	var heroes []models.Hero
 	db.DB.Find(&heroes)
-
-	for _, hero := range heroes {
-		db.DB.Model(&hero).Association("Skills").Find(&hero.Id)
-	}
 
 	encodeErr := json.NewEncoder(c.Writer).Encode(&heroes)
 	if encodeErr != nil {
@@ -35,7 +32,10 @@ func GetHeroHandler(c *gin.Context) {
 		})
 	}
 
-	db.DB.Model(&hero).Association("Skills").Find(&hero.Skills)
+	findErr := db.DB.Model(&hero).Association("Skills").Find(&hero.Skills)
+	if findErr != nil {
+		log.Fatal(findErr)
+	}
 
 	encodeErr := json.NewEncoder(c.Writer).Encode(&hero)
 	if encodeErr != nil {
@@ -43,6 +43,21 @@ func GetHeroHandler(c *gin.Context) {
 			"Error": encodeErr,
 		})
 	}
+}
+
+func GetHeroByAttributeHandler(c *gin.Context) {
+	var heroes []models.Hero
+	attribute := c.Param("attribute")
+
+	db.DB.Where("attribute= ?", attribute).Find(&heroes)
+
+	encodeErr := json.NewEncoder(c.Writer).Encode(&heroes)
+	if encodeErr != nil {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
+			"Error": encodeErr,
+		})
+	}
+
 }
 
 func PostHeroHandler(c *gin.Context) {
